@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 import os
 import json
 import re
-import requests
 from playwright.sync_api import sync_playwright
 
 
@@ -34,7 +33,7 @@ with sync_playwright() as p:
 prezzo = "Non trovato"
 
 
-# Trova il prezzo finale
+# Cerca il prezzo finale USD
 posizione = testo.find("Totale")
 
 if posizione != -1:
@@ -50,24 +49,11 @@ if posizione != -1:
             valori[-1].replace(",", ".")
         )
 
-        # Cambio automatico USD -> EUR
-        try:
-            cambio = requests.get(
-                "https://open.er-api.com/v6/latest/USD",
-                timeout=10
-            ).json()["rates"]["EUR"]
-
-            prezzo = round(
-                prezzo_usd * cambio,
-                2
-            )
-
-        except Exception:
-            # sicurezza se il cambio non risponde
-            prezzo = round(
-                prezzo_usd * 0.9026,
-                2
-            )
+        # Cambio usato da Eldorado
+        prezzo = round(
+            prezzo_usd * 0.9009,
+            2
+        )
 
 
 # Google Sheets
@@ -88,11 +74,13 @@ sheet = client.open_by_key(
 ).sheet1
 
 
+# Ora italiana
 ora = datetime.now(
     ZoneInfo("Europe/Rome")
 ).strftime("%d/%m/%Y %H:%M:%S")
 
 
+# Scrive nel foglio
 sheet.append_row([
     ora,
     prezzo
