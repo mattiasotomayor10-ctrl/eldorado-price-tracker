@@ -10,16 +10,26 @@ url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=p
 
 html = requests.get(
     url,
-    headers={"User-Agent": "Mozilla/5.0"}
+    headers={
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "it-IT,it;q=0.9"
+    }
 ).text
 
-# Cerca il prezzo nella pagina
-match = re.search(r"€\s?([0-9]+[.,][0-9]+)", html)
+# Cerca vari formati di prezzo
+patterns = [
+    r"€\s?([0-9]+[.,][0-9]+)",
+    r"([0-9]+[.,][0-9]+)\s?€",
+    r"price.{0,50}?([0-9]+[.,][0-9]+)"
+]
 
-if match:
-    prezzo = match.group(1).replace(",", ".")
-else:
-    prezzo = "Non trovato"
+prezzo = "Non trovato"
+
+for pattern in patterns:
+    match = re.search(pattern, html, re.IGNORECASE)
+    if match:
+        prezzo = match.group(1).replace(",", ".")
+        break
 
 # Collegamento Google Sheets
 scope = [
@@ -38,7 +48,7 @@ sheet = client.open_by_key(
     "1UdzDqGlSTkgkz3jH1fgsm2hLIJZbtBs5jnzBO0vPdAY"
 ).sheet1
 
-# Scrive data, ora e prezzo
+# Scrive il risultato nel foglio
 sheet.append_row([
     datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
     prezzo
