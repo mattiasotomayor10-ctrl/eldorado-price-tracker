@@ -4,6 +4,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 import json
+import re
 
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
@@ -12,8 +13,13 @@ html = requests.get(
     headers={"User-Agent": "Mozilla/5.0"}
 ).text
 
-# Per ora mettiamo un prezzo di prova
-prezzo = "11.22"
+# Cerca il prezzo nella pagina
+match = re.search(r"€\s?([0-9]+[.,][0-9]+)", html)
+
+if match:
+    prezzo = match.group(1).replace(",", ".")
+else:
+    prezzo = "Non trovato"
 
 # Collegamento Google Sheets
 scope = [
@@ -32,9 +38,10 @@ sheet = client.open_by_key(
     "1UdzDqGlSTkgkz3jH1fgsm2hLIJZbtBs5jnzBO0vPdAY"
 ).sheet1
 
+# Scrive data, ora e prezzo
 sheet.append_row([
     datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
     prezzo
 ])
 
-print("Salvato:", prezzo)
+print("Prezzo salvato:", prezzo)
