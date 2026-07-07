@@ -1,3 +1,4 @@
+
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
@@ -14,12 +15,7 @@ url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=p
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(
-        locale="it-IT",
-        extra_http_headers={
-            "Accept-Language": "it-IT,it;q=0.9"
-        }
-    )
+    page = browser.new_page(locale="it-IT")
 
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
@@ -31,41 +27,20 @@ with sync_playwright() as p:
 
 prezzo = "Non trovato"
 
-
-# Cerca prezzo finale USD
-prezzo_usd = None
-
+# Prende il prezzo finale vicino a Totale
 posizione = testo.find("Totale")
 
 if posizione != -1:
-    blocco = testo[posizione:posizione + 200]
+    blocco = testo[posizione:posizione + 150]
 
-    valori = re.findall(
+    prezzi = re.findall(
         r"([0-9]+[.,][0-9]+)\s*USD",
         blocco
     )
 
-    if valori:
-        prezzo_usd = float(valori[-1].replace(",", "."))
-
-
-# Cerca eventuale prezzo EUR nella pagina
-valori_eur = re.findall(
-    r"([0-9]+[.,][0-9]+)\s*(?:EUR|€)",
-    testo
-)
-
-if valori_eur:
-    prezzo = float(valori_eur[-1].replace(",", "."))
-
-elif prezzo_usd:
-    # Rapporto Eldorado aggiornato automaticamente
-    # basato sul cambio visualizzato in precedenza
-    prezzo = round(prezzo_usd * 0.9026, 2)
-
-
-if prezzo != "Non trovato":
-    prezzo = round(float(prezzo), 2)
+    if prezzi:
+        prezzo_usd = float(prezzi[-1].replace(",", "."))
+        prezzo = round(prezzo_usd * 0.9026, 2)
 
 
 # Google Sheets
@@ -97,5 +72,5 @@ sheet.append_row([
 ])
 
 
-print("Prezzo salvato:", prezzo)
+print("Prezzo:", prezzo)
 print("Ora:", ora)
