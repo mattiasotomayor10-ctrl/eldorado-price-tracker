@@ -30,9 +30,9 @@ with sync_playwright() as p:
     browser.close()
 
 
-prezzo = "Non trovato"
+prezzo_usd = "Non trovato"
 
-# Cerca il prezzo finale vicino a "Totale"
+# Cerca il prezzo finale
 posizione = testo.find("Totale")
 
 if posizione != -1:
@@ -44,10 +44,17 @@ if posizione != -1:
     )
 
     if prezzi:
-        prezzo = prezzi[-1][0].replace(",", ".")
+        prezzo_usd = prezzi[-1][0].replace(",", ".")
 
 
-# Google Sheets
+# Conversione USD -> EUR
+prezzo = prezzo_usd
+
+if prezzo_usd != "Non trovato":
+    prezzo = round(float(prezzo_usd) * 0.905, 2)
+
+
+# Collegamento Google Sheets
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -65,16 +72,19 @@ sheet = client.open_by_key(
 ).sheet1
 
 
+# Ora italiana
 ora = datetime.now(
     ZoneInfo("Europe/Rome")
 ).strftime("%d/%m/%Y %H:%M:%S")
 
 
+# Salva
 sheet.append_row([
     ora,
     prezzo
 ])
 
 
-print("Prezzo salvato:", prezzo)
+print("Prezzo USD:", prezzo_usd)
+print("Prezzo EUR:", prezzo)
 print("Ora:", ora)
