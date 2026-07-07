@@ -8,19 +8,13 @@ import re
 from playwright.sync_api import sync_playwright
 
 
-url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months&currency=EUR"
+url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
 
-# Apri Eldorado con browser
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(
-        locale="it-IT",
-        extra_http_headers={
-            "Accept-Language": "it-IT,it;q=0.9"
-        }
-    )
+    page = browser.new_page(locale="it-IT")
 
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
@@ -30,38 +24,29 @@ with sync_playwright() as p:
     browser.close()
 
 
-# Cerca prezzo EUR
-prezzo = "Non trovato"
+prezzo_usd = "Non trovato"
 
+
+# Prende il prezzo finale dopo Totale
 posizione = testo.find("Totale")
 
 if posizione != -1:
     parte = testo[posizione:posizione + 200]
 
     prezzi = re.findall(
-        r"([0-9]+[,.][0-9]+)\s*(EUR|€)",
+        r"([0-9]+[.,][0-9]+)\s*USD",
         parte
     )
 
     if prezzi:
-        prezzo = prezzi[-1][0].replace(",", ".")
+        prezzo_usd = prezzi[-1].replace(",", ".")
 
 
-# Se non trova EUR prova vicino al prodotto
-if prezzo == "Non trovato":
+# Conversione con cambio Eldorado
+prezzo = "Non trovato"
 
-    posizione = testo.find("Premium Mega Fan - 12 Mesi")
-
-    if posizione != -1:
-        parte = testo[posizione:posizione + 300]
-
-        risultati = re.findall(
-            r"([0-9]+[,.][0-9]+)\s*(EUR|€)",
-            parte
-        )
-
-        if risultati:
-            prezzo = risultati[-1][0].replace(",", ".")
+if prezzo_usd != "Non trovato":
+    prezzo = round(float(prezzo_usd) * 0.9026, 2)
 
 
 # Google Sheets
@@ -93,5 +78,6 @@ sheet.append_row([
 ])
 
 
-print("Prezzo EUR:", prezzo)
+print("USD:", prezzo_usd)
+print("EUR:", prezzo)
 print("Ora:", ora)
