@@ -1,10 +1,13 @@
 name: Eldorado Price Tracker
 
 on:
+  schedule:
+    - cron: "*/15 * * * *"
+
   workflow_dispatch:
 
 jobs:
-  test:
+  tracker:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +21,7 @@ jobs:
 
       - name: Installa librerie
         run: |
-          pip install requests gspread oauth2client playwright
+          pip install gspread oauth2client playwright
           playwright install chromium
 
       - name: Avvia tracker
