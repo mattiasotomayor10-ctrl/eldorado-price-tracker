@@ -25,24 +25,26 @@ with sync_playwright() as p:
     browser.close()
 
 
-# Cerca il prezzo di Premium Mega Fan - 12 Mesi
 prezzo = "Non trovato"
 
-posizione = testo.find("Premium Mega Fan - 12 Mesi")
+# Prende il blocco dopo "Totale"
+posizione = testo.find("Totale")
 
 if posizione != -1:
-    parte = testo[posizione:posizione + 200]
+    parte = testo[posizione:posizione + 100]
 
-    risultato = re.search(
+    prezzi = re.findall(
         r"([0-9]+,[0-9]+)\s*USD",
         parte
     )
 
-    if risultato:
-        prezzo = risultato.group(1).replace(",", ".")
+    if len(prezzi) >= 2:
+        prezzo = prezzi[1].replace(",", ".")
+    elif len(prezzi) == 1:
+        prezzo = prezzi[0].replace(",", ".")
 
 
-# Google Sheets
+# Collegamento Google Sheets
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -73,5 +75,4 @@ sheet.append_row([
 
 print("Prezzo salvato:", prezzo)
 print("Ora:", ora)
-
 
