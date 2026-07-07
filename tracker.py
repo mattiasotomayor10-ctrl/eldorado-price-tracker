@@ -1,4 +1,3 @@
-
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
@@ -15,11 +14,18 @@ url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=p
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(locale="it-IT")
+    page = browser.new_page(
+        locale="it-IT",
+        extra_http_headers={
+            "Accept-Language": "it-IT,it;q=0.9"
+        }
+    )
 
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
 
+    # Prende tutto il contenuto della pagina
+    html = page.content()
     testo = page.locator("body").inner_text()
 
     browser.close()
@@ -27,20 +33,33 @@ with sync_playwright() as p:
 
 prezzo = "Non trovato"
 
-# Prende il prezzo finale vicino a Totale
-posizione = testo.find("Totale")
 
-if posizione != -1:
-    blocco = testo[posizione:posizione + 150]
+# Cerca prezzi con valuta EUR nei dati della pagina
+eur = re.findall(
+    r'"(?:price|amount|value)"\s*:\s*"?([0-9]+[.,][0-9]+)"?',
+    html,
+    re.IGNORECASE
+)
 
-    prezzi = re.findall(
-        r"([0-9]+[.,][0-9]+)\s*USD",
-        blocco
-    )
+if eur:
+    prezzo = eur[-1].replace(",", ".")
 
-    if prezzi:
-        prezzo_usd = float(prezzi[-1].replace(",", "."))
-        prezzo = round(prezzo_usd * 0.9026, 2)
+
+# Se non trova JSON, prova il testo visibile
+if prezzo == "Non trovato":
+
+    posizione = testo.find("Totale")
+
+    if posizione != -1:
+        blocco = testo[posizione:posizione + 200]
+
+        valori = re.findall(
+            r"([0-9]+[.,][0-9]+)\s*(?:EUR|€)",
+            blocco
+        )
+
+        if valori:
+            prezzo = valori[-1].replace(",", ".")
 
 
 # Google Sheets
