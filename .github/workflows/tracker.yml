@@ -11,20 +11,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Scarica codice
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Imposta Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
-      - name: Installa librerie
+      - name: Installazione librerie
         run: |
           pip install gspread oauth2client playwright
           playwright install chromium
 
-      - name: Avvia tracker
+      - name: Avvio tracker
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python tracker.py
