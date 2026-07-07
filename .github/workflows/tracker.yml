@@ -19,7 +19,7 @@ jobs:
           python-version: "3.x"
 
       - name: Installa librerie
-        run: pip install requests
+  run: pip install requests gspread oauth2client
 
       - name: Esegui controllo
         run: python tracker.py
