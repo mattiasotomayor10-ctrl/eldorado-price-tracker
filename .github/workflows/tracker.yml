@@ -11,10 +11,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install libraries
-        run: pip install requests gspread oauth2client
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
-      - name: Run tracker
+      - name: Installa librerie
+        run: |
+          pip install requests gspread oauth2client playwright
+          playwright install chromium
+
+      - name: Avvia tracker
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python tracker.py
