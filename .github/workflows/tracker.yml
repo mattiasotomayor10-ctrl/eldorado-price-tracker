@@ -11,5 +11,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Installa librerie
+        run: pip install requests gspread oauth2client
+
       - name: Test Python
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python tracker.py
