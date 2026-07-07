@@ -5,12 +5,14 @@ from zoneinfo import ZoneInfo
 import os
 import json
 import re
+import requests
 from playwright.sync_api import sync_playwright
 
 
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
 
+# Apri Eldorado
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
@@ -32,7 +34,7 @@ with sync_playwright() as p:
 prezzo = "Non trovato"
 
 
-# Cerca il prezzo scontato vicino a Totale
+# Trova il prezzo finale
 posizione = testo.find("Totale")
 
 if posizione != -1:
@@ -48,11 +50,24 @@ if posizione != -1:
             valori[-1].replace(",", ".")
         )
 
-        # Cambio Eldorado
-        prezzo = round(
-            prezzo_usd * 0.9026,
-            2
-        )
+        # Cambio automatico USD -> EUR
+        try:
+            cambio = requests.get(
+                "https://open.er-api.com/v6/latest/USD",
+                timeout=10
+            ).json()["rates"]["EUR"]
+
+            prezzo = round(
+                prezzo_usd * cambio,
+                2
+            )
+
+        except Exception:
+            # sicurezza se il cambio non risponde
+            prezzo = round(
+                prezzo_usd * 0.9026,
+                2
+            )
 
 
 # Google Sheets
@@ -84,5 +99,6 @@ sheet.append_row([
 ])
 
 
-print("Prezzo salvato:", prezzo)
+print("Prezzo USD:", prezzo_usd if 'prezzo_usd' in locals() else "n/d")
+print("Prezzo EUR:", prezzo)
 print("Ora:", ora)
