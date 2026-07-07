@@ -12,16 +12,11 @@ from playwright.sync_api import sync_playwright
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
 
-# Apri Eldorado con browser automatico
+# Browser automatico
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(
-        locale="it-IT",
-        extra_http_headers={
-            "Accept-Language": "it-IT,it;q=0.9"
-        }
-    )
+    page = browser.new_page(locale="it-IT")
 
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
@@ -31,7 +26,7 @@ with sync_playwright() as p:
     browser.close()
 
 
-# Trova prezzo USD finale
+# Prende prezzo USD
 prezzo_usd = "Non trovato"
 
 posizione = testo.find("Totale")
@@ -40,37 +35,39 @@ if posizione != -1:
     parte = testo[posizione:posizione + 150]
 
     prezzi = re.findall(
-        r"([0-9]+[,.][0-9]+)\s*(USD|EUR|€)",
+        r"([0-9]+[.,][0-9]+)\s*USD",
         parte
     )
 
     if prezzi:
-        prezzo_usd = prezzi[-1][0].replace(",", ".")
+        prezzo_usd = prezzi[-1].replace(",", ".")
 
 
-# Conversione automatica USD -> EUR
+# Cambio automatico USD EUR
 prezzo = prezzo_usd
 
 if prezzo_usd != "Non trovato":
-
     try:
-        cambio = requests.get(
-            "https://api.exchangerate.host/latest?base=USD&symbols=EUR",
+        risposta = requests.get(
+            "https://open.er-api.com/v6/latest/USD",
             timeout=10
-        ).json()
+        )
 
-        usd_eur = cambio["rates"]["EUR"]
+        dati = risposta.json()
+
+        cambio = dati["rates"]["EUR"]
 
         prezzo = round(
-            float(prezzo_usd) * usd_eur,
+            float(prezzo_usd) * cambio,
             2
         )
 
-    except Exception:
+    except Exception as e:
+        print("Errore cambio:", e)
         prezzo = "Errore cambio"
 
 
-# Collegamento Google Sheets
+# Google Sheets
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -88,19 +85,17 @@ sheet = client.open_by_key(
 ).sheet1
 
 
-# Ora italiana
 ora = datetime.now(
     ZoneInfo("Europe/Rome")
 ).strftime("%d/%m/%Y %H:%M:%S")
 
 
-# Scrive nel foglio
 sheet.append_row([
     ora,
     prezzo
 ])
 
 
-print("Prezzo USD:", prezzo_usd)
-print("Prezzo EUR:", prezzo)
+print("USD:", prezzo_usd)
+print("EUR:", prezzo)
 print("Ora:", ora)
