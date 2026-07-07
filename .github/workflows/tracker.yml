@@ -13,7 +13,7 @@ jobs:
       - name: Scarica repository
         uses: actions/checkout@v4
 
-      - name: Avvia Python
+      - name: Imposta Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -22,4 +22,6 @@ jobs:
         run: pip install requests gspread oauth2client
 
       - name: Esegui controllo
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python tracker.py
