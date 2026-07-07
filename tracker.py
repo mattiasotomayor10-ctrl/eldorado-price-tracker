@@ -5,18 +5,22 @@ from zoneinfo import ZoneInfo
 import os
 import json
 import re
-import requests
 from playwright.sync_api import sync_playwright
 
 
-url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
+url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months&currency=EUR"
 
 
-# Browser automatico
+# Apri Eldorado con browser
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(locale="it-IT")
+    page = browser.new_page(
+        locale="it-IT",
+        extra_http_headers={
+            "Accept-Language": "it-IT,it;q=0.9"
+        }
+    )
 
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
@@ -26,45 +30,38 @@ with sync_playwright() as p:
     browser.close()
 
 
-# Prende prezzo USD
-prezzo_usd = "Non trovato"
+# Cerca prezzo EUR
+prezzo = "Non trovato"
 
 posizione = testo.find("Totale")
 
 if posizione != -1:
-    parte = testo[posizione:posizione + 150]
+    parte = testo[posizione:posizione + 200]
 
     prezzi = re.findall(
-        r"([0-9]+[.,][0-9]+)\s*USD",
+        r"([0-9]+[,.][0-9]+)\s*(EUR|€)",
         parte
     )
 
     if prezzi:
-        prezzo_usd = prezzi[-1].replace(",", ".")
+        prezzo = prezzi[-1][0].replace(",", ".")
 
 
-# Cambio automatico USD EUR
-prezzo = prezzo_usd
+# Se non trova EUR prova vicino al prodotto
+if prezzo == "Non trovato":
 
-if prezzo_usd != "Non trovato":
-    try:
-        risposta = requests.get(
-            "https://open.er-api.com/v6/latest/USD",
-            timeout=10
+    posizione = testo.find("Premium Mega Fan - 12 Mesi")
+
+    if posizione != -1:
+        parte = testo[posizione:posizione + 300]
+
+        risultati = re.findall(
+            r"([0-9]+[,.][0-9]+)\s*(EUR|€)",
+            parte
         )
 
-        dati = risposta.json()
-
-        cambio = dati["rates"]["EUR"]
-
-        prezzo = round(
-            float(prezzo_usd) * cambio,
-            2
-        )
-
-    except Exception as e:
-        print("Errore cambio:", e)
-        prezzo = "Errore cambio"
+        if risultati:
+            prezzo = risultati[-1][0].replace(",", ".")
 
 
 # Google Sheets
@@ -96,6 +93,5 @@ sheet.append_row([
 ])
 
 
-print("USD:", prezzo_usd)
-print("EUR:", prezzo)
+print("Prezzo EUR:", prezzo)
 print("Ora:", ora)
