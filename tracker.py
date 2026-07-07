@@ -24,9 +24,11 @@ with sync_playwright() as p:
     page.goto(url, wait_until="networkidle")
     page.wait_for_timeout(5000)
 
-    # Prende tutto il contenuto della pagina
-    html = page.content()
     testo = page.locator("body").inner_text()
+
+    # DEBUG: mostra cosa vede il browser
+    print("TESTO PAGINA:")
+    print(testo[:3000])
 
     browser.close()
 
@@ -34,32 +36,26 @@ with sync_playwright() as p:
 prezzo = "Non trovato"
 
 
-# Cerca prezzi con valuta EUR nei dati della pagina
-eur = re.findall(
-    r'"(?:price|amount|value)"\s*:\s*"?([0-9]+[.,][0-9]+)"?',
-    html,
-    re.IGNORECASE
-)
+# Cerca il prezzo vicino a Totale
+posizione = testo.find("Totale")
 
-if eur:
-    prezzo = eur[-1].replace(",", ".")
+if posizione != -1:
+    blocco = testo[posizione:posizione + 200]
 
+    valori = re.findall(
+        r"([0-9]+[.,][0-9]+)\s*(USD|EUR|€)",
+        blocco
+    )
 
-# Se non trova JSON, prova il testo visibile
-if prezzo == "Non trovato":
+    if valori:
+        numero = valori[-1][0].replace(",", ".")
+        valuta = valori[-1][1]
 
-    posizione = testo.find("Totale")
-
-    if posizione != -1:
-        blocco = testo[posizione:posizione + 200]
-
-        valori = re.findall(
-            r"([0-9]+[.,][0-9]+)\s*(?:EUR|€)",
-            blocco
-        )
-
-        if valori:
-            prezzo = valori[-1].replace(",", ".")
+        if valuta == "EUR" or valuta == "€":
+            prezzo = numero
+        else:
+            # fallback temporaneo
+            prezzo = round(float(numero) * 0.9026, 2)
 
 
 # Google Sheets
@@ -91,5 +87,5 @@ sheet.append_row([
 ])
 
 
-print("Prezzo:", prezzo)
+print("Prezzo salvato:", prezzo)
 print("Ora:", ora)
