@@ -1,13 +1,17 @@
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 import json
 import re
 
+
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
+
+# Scarica la pagina
 html = requests.get(
     url,
     headers={
@@ -16,20 +20,23 @@ html = requests.get(
     }
 ).text
 
-# Cerca vari formati di prezzo
+
+# Cerca il prezzo
+prezzo = "Non trovato"
+
 patterns = [
     r"€\s?([0-9]+[.,][0-9]+)",
     r"([0-9]+[.,][0-9]+)\s?€",
-    r"price.{0,50}?([0-9]+[.,][0-9]+)"
+    r'"price"\s*:\s*"?([0-9]+[.,][0-9]+)',
+    r'"amount"\s*:\s*"?([0-9]+[.,][0-9]+)'
 ]
 
-prezzo = "Non trovato"
-
 for pattern in patterns:
-    match = re.search(pattern, html, re.IGNORECASE)
-    if match:
-        prezzo = match.group(1).replace(",", ".")
+    risultato = re.search(pattern, html, re.IGNORECASE)
+    if risultato:
+        prezzo = risultato.group(1).replace(",", ".")
         break
+
 
 # Collegamento Google Sheets
 scope = [
@@ -48,10 +55,18 @@ sheet = client.open_by_key(
     "1UdzDqGlSTkgkz3jH1fgsm2hLIJZbtBs5jnzBO0vPdAY"
 ).sheet1
 
-# Scrive il risultato nel foglio
+
+# Ora italiana
+ora = datetime.now(
+    ZoneInfo("Europe/Rome")
+).strftime("%d/%m/%Y %H:%M:%S")
+
+
+# Scrive nel foglio
 sheet.append_row([
-    datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+    ora,
     prezzo
 ])
 
-print("Prezzo salvato:", prezzo)
+
+print("Salvato:", ora, prezzo)
