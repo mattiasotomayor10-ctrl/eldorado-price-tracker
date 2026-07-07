@@ -1,0 +1,25 @@
+name: Eldorado Price Tracker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check-price:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scarica repository
+        uses: actions/checkout@v4
+
+      - name: Avvia Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Installa librerie
+        run: pip install requests
+
+      - name: Esegui controllo
+        run: python tracker.py
