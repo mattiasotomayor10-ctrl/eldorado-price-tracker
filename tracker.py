@@ -26,36 +26,33 @@ with sync_playwright() as p:
 
     testo = page.locator("body").inner_text()
 
-    # DEBUG: mostra cosa vede il browser
-    print("TESTO PAGINA:")
-    print(testo[:3000])
-
     browser.close()
 
 
 prezzo = "Non trovato"
 
 
-# Cerca il prezzo vicino a Totale
+# Cerca il prezzo scontato vicino a Totale
 posizione = testo.find("Totale")
 
 if posizione != -1:
     blocco = testo[posizione:posizione + 200]
 
     valori = re.findall(
-        r"([0-9]+[.,][0-9]+)\s*(USD|EUR|€)",
+        r"([0-9]+[.,][0-9]+)\s*USD",
         blocco
     )
 
     if valori:
-        numero = valori[-1][0].replace(",", ".")
-        valuta = valori[-1][1]
+        prezzo_usd = float(
+            valori[-1].replace(",", ".")
+        )
 
-        if valuta == "EUR" or valuta == "€":
-            prezzo = numero
-        else:
-            # fallback temporaneo
-            prezzo = round(float(numero) * 0.9026, 2)
+        # Cambio Eldorado
+        prezzo = round(
+            prezzo_usd * 0.9026,
+            2
+        )
 
 
 # Google Sheets
