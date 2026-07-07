@@ -1,5 +1,9 @@
 import requests
 from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import os
+import json
 
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
@@ -8,5 +12,29 @@ html = requests.get(
     headers={"User-Agent": "Mozilla/5.0"}
 ).text
 
-print("Controllo eseguito:", datetime.now())
-print(html[:500])
+# Per ora mettiamo un prezzo di prova
+prezzo = "11.22"
+
+# Collegamento Google Sheets
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    json.loads(os.environ["GOOGLE_CREDENTIALS"]),
+    scope
+)
+
+client = gspread.authorize(creds)
+
+sheet = client.open_by_key(
+    "1UdzDqGlSTkgkz3jH1fgsm2hLIJZbtBs5jnzBO0vPdAY"
+).sheet1
+
+sheet.append_row([
+    datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+    prezzo
+])
+
+print("Salvato:", prezzo)
