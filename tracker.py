@@ -14,7 +14,12 @@ url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=p
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    page = browser.new_page(locale="it-IT")
+    page = browser.new_page(
+        locale="it-IT",
+        extra_http_headers={
+            "Accept-Language": "it-IT,it;q=0.9"
+        }
+    )
 
     page.goto(url, wait_until="networkidle")
 
@@ -27,24 +32,22 @@ with sync_playwright() as p:
 
 prezzo = "Non trovato"
 
-# Prende il blocco dopo "Totale"
+# Cerca il prezzo finale vicino a "Totale"
 posizione = testo.find("Totale")
 
 if posizione != -1:
-    parte = testo[posizione:posizione + 100]
+    parte = testo[posizione:posizione + 150]
 
     prezzi = re.findall(
-        r"([0-9]+,[0-9]+)\s*USD",
+        r"([0-9]+[,.][0-9]+)\s*(USD|EUR|€)",
         parte
     )
 
-    if len(prezzi) >= 2:
-        prezzo = prezzi[1].replace(",", ".")
-    elif len(prezzi) == 1:
-        prezzo = prezzi[0].replace(",", ".")
+    if prezzi:
+        prezzo = prezzi[-1][0].replace(",", ".")
 
 
-# Collegamento Google Sheets
+# Google Sheets
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -75,4 +78,3 @@ sheet.append_row([
 
 print("Prezzo salvato:", prezzo)
 print("Ora:", ora)
-
