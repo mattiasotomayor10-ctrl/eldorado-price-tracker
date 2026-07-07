@@ -11,7 +11,7 @@ import re
 url = "https://www.eldorado.gg/it/crunchyroll-premium/t/253?attribute_value_id=premium-mega-fan-12-months"
 
 
-# Scarica la pagina
+# Scarica pagina Eldorado
 html = requests.get(
     url,
     headers={
@@ -21,21 +21,21 @@ html = requests.get(
 ).text
 
 
-# Cerca il prezzo
+# Cerca il prezzo corretto vicino a Mega Fan
 prezzo = "Non trovato"
 
-patterns = [
-    r"€\s?([0-9]+[.,][0-9]+)",
-    r"([0-9]+[.,][0-9]+)\s?€",
-    r'"price"\s*:\s*"?([0-9]+[.,][0-9]+)',
-    r'"amount"\s*:\s*"?([0-9]+[.,][0-9]+)'
-]
+posizione = html.lower().find("mega fan")
 
-for pattern in patterns:
-    risultato = re.search(pattern, html, re.IGNORECASE)
-    if risultato:
-        prezzo = risultato.group(1).replace(",", ".")
-        break
+if posizione != -1:
+    parte = html[posizione:posizione + 3000]
+
+    prezzi = re.findall(
+        r"([0-9]+[.,][0-9]+)",
+        parte
+    )
+
+    if prezzi:
+        prezzo = prezzi[0].replace(",", ".")
 
 
 # Collegamento Google Sheets
@@ -62,7 +62,7 @@ ora = datetime.now(
 ).strftime("%d/%m/%Y %H:%M:%S")
 
 
-# Scrive nel foglio
+# Salva nel foglio
 sheet.append_row([
     ora,
     prezzo
