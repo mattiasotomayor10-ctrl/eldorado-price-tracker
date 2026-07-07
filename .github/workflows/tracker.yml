@@ -1,27 +1,15 @@
 name: Eldorado Price Tracker
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:
-  check-price:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Scarica repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Imposta Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Installa librerie
-        run: pip install requests gspread oauth2client
-
-      - name: Esegui controllo
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      - name: Test Python
         run: python tracker.py
